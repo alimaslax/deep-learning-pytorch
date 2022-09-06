@@ -1,6 +1,7 @@
-# Ignore everything
-*
-
+# Ignore datasets
+/MNIST/*
+/.idea/*
+/src/MNIST/*
 # But not these files...
 !.gitignore
 !script.pl
