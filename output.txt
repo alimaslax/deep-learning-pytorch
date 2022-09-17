@@ -1,0 +1,10 @@
+Epoch 1, train loss: 0.83
+Epoch 1, validation loss: 0.43
+Epoch 2, train loss: 0.38
+Epoch 2, validation loss: 0.35
+Epoch 3, train loss: 0.32
+Epoch 3, validation loss: 0.30
+Epoch 4, train loss: 0.27
+Epoch 4, validation loss: 0.27
+Epoch 5, train loss: 0.24
+Epoch 5, validation loss: 0.25
