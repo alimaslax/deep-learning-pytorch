@@ -1,3 +1,6 @@
+##
+# Harrison@pythonprogramming.net
+##
 # pip install numpy nnfs
 import numpy as np
 import nnfs
