@@ -9,6 +9,14 @@
 !/*.ipynb
 # etc...
 
+# ignore images
+
+src/lebarn
+src/tate
+
+# ignore training data
+src/training_data.npy
+
 # ...even if they are in subdirectories
 !/*
 
