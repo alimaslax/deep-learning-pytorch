@@ -1,3 +1,6 @@
+from matplotlib import style
+import torch.optim as optim
+import time
 import os
 import cv2
 import numpy as np
@@ -50,23 +53,7 @@ class LebarnVSTate():
         print('Lebarn:', lebarnVtate.lebarncount)
         print('Tatum:', lebarnVtate.tatecount)
 
-
-if REBUILD_DATA:
-    lebarnVtate = LebarnVSTate()
-    lebarnVtate.make_training_data()
-
-training_data = np.load("./src/training_data.npy", allow_pickle=True)
-print(len(training_data))
-
-
-# Now we can split our training data into X and y, as well as convert it to a tensor:
-X = torch.Tensor([i[0] for i in training_data]).view(-1, 50, 50)
-X = X/255.0
-y = torch.Tensor([i[1] for i in training_data])
-print("Hello")
-plt.imshow(X[0], cmap="gray")
-plt.show()
-print("END")
+# =============================================================================
 
 
 class Net(nn.Module):
@@ -107,3 +94,200 @@ class Net(nn.Module):
 
 net = Net()
 print(net)
+
+# =============================================================================
+
+if REBUILD_DATA:
+    lebarnVtate = LebarnVSTate()
+    lebarnVtate.make_training_data()
+
+training_data = np.load("./src/training_data.npy", allow_pickle=True)
+print(len(training_data))
+
+
+# Now we can split our training data into X and y, as well as convert it to a tensor:
+X = torch.Tensor([i[0] for i in training_data]).view(-1, 50, 50)
+X = X/255.0
+y = torch.Tensor([i[1] for i in training_data])
+
+# show first image of training data
+# plt.imshow(X[1], cmap="gray")
+# plt.show()
+
+# =============================================================================
+
+if torch.cuda.is_available():
+    # you can continue going on here, like cuda:1 cuda:2....etc.
+    device = torch.device("cuda:0")
+    print("Running on the GPU")
+else:
+    device = torch.device("cpu")
+    print("Running on the CPU")
+
+# =============================================================================
+
+# Constants
+BATCH_SIZE = 100
+EPOCHS = 5
+
+# gives a dynamic model name, to just help with things getting messy over time.
+MODEL_NAME = f"model-{int(time.time())}"
+net = Net().to(device)
+optimizer = optim.Adam(net.parameters(), lr=0.001)
+loss_function = nn.MSELoss()
+
+print(MODEL_NAME)
+
+VAL_PCT = 0.1  # lets reserve 10% of our data for validation
+val_size = int(len(X)*VAL_PCT)
+print(val_size)
+train_X = X[:-val_size]
+train_y = y[:-val_size]
+
+test_X = X[-val_size:]
+test_y = y[-val_size:]
+
+
+def fwd_pass(X, y, train=False):
+    if train:
+        net.zero_grad()
+    outputs = net(X)
+    matches = [torch.argmax(i) == torch.argmax(j) for i, j in zip(outputs, y)]
+    acc = matches.count(True)/len(matches)
+    loss = loss_function(outputs, y)
+
+    if train:
+        loss.backward()
+        optimizer.step()
+
+    return acc, loss
+
+
+def train(net):
+    BATCH_SIZE = 100
+    EPOCHS = 30
+
+    with open("model.log", "a") as f:
+        for epoch in range(EPOCHS):
+            for i in tqdm(range(0, len(train_X), BATCH_SIZE)):
+                batch_X = train_X[i:i+BATCH_SIZE].view(-1, 1, 50, 50)
+                batch_y = train_y[i:i+BATCH_SIZE]
+
+                batch_X, batch_y = batch_X.to(device), batch_y.to(device)
+
+                acc, loss = fwd_pass(batch_X, batch_y, train=True)
+
+                print(
+                    f"Acc: {round(float(acc),2)}  Loss: {round(float(loss),4)}")
+                # f.write(f"{MODEL_NAME},{round(time.time(),3)},train,{round(float(acc),2)},{round(float(loss),4)}\n")
+                # just to show the above working, and then get out:
+                if i % 50 == 0:
+                    val_acc, val_loss = test(size=100)
+                    f.write(
+                        f"{MODEL_NAME},{round(time.time(),3)},{round(float(acc),2)},{round(float(loss), 4)},{round(float(val_acc),2)},{round(float(val_loss),4)},{epoch}\n")
+    torch.save(net, './net-model001')
+
+
+def test(size=32):
+    X, y = test_X[:size], test_y[:size]
+    val_acc, val_loss = fwd_pass(
+        X.view(-1, 1, 50, 50).to(device), y.to(device))
+    return val_acc, val_loss
+
+
+# train(net)
+
+
+# =============================================================================
+
+
+style.use("ggplot")
+
+# grab whichever model name you want here. We could also just reference the MODEL_NAME if you're in a notebook still.
+model_name = MODEL_NAME  # "model-1669602423"
+
+
+def create_acc_loss_graph(model_name):
+    contents = open("model.log", "r").read().split("\n")
+
+    times = []
+    accuracies = []
+    losses = []
+
+    val_accs = []
+    val_losses = []
+
+    for c in contents:
+        if model_name in c:
+            name, timestamp, acc, loss, val_acc, val_loss, epoch = c.split(",")
+
+            times.append(float(timestamp))
+            accuracies.append(float(acc))
+            losses.append(float(loss))
+
+            val_accs.append(float(val_acc))
+            val_losses.append(float(val_loss))
+
+    fig = plt.figure()
+
+    ax1 = plt.subplot2grid((2, 1), (0, 0))
+    ax2 = plt.subplot2grid((2, 1), (1, 0), sharex=ax1)
+
+    ax1.plot(times, accuracies, label="acc")
+    ax1.plot(times, val_accs, label="val_acc")
+    ax1.legend(loc=2)
+    ax2.plot(times, losses, label="loss")
+    ax2.plot(times, val_losses, label="val_loss")
+    ax2.legend(loc=2)
+    # plt.show()
+
+
+# create_acc_loss_graph(model_name)
+
+# =============================================================================
+
+
+# =============================================================================
+# After Network Has been trained
+def fwd_pass2(X, y, train=False):
+    # Model class must be defined somewhere
+    net = torch.load('./net-model001')
+    outputs = net(X)
+
+    # matches who
+    matchesLebarn = [torch.argmax(outputs[0]) == torch.argmax(
+        torch.Tensor(np.eye(2)[0]))]
+    matchesTatum = [torch.argmax(outputs[0]) == torch.argmax(
+        torch.Tensor(np.eye(2)[1]))]
+
+    # loss calculation
+    lossLebarn = loss_function(outputs, torch.Tensor(np.eye(2)[0]))
+    lossTatum = loss_function(outputs, torch.Tensor(np.eye(2)[1]))
+
+    print(f"James Confidence: % {100-(round(float(lossLebarn),4)*100)}")
+    print(f"Tatum Confidence: % {100-(round(float(lossTatum),4)*100)}")
+
+
+# Run User Inputed Images
+IMG_SIZE = 50
+test = []
+
+img = cv2.imread(
+    '/Users/mali/dev/deep-learning-pytorch/src/testing/random4.jpeg', cv2.IMREAD_GRAYSCALE)
+img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
+
+# do something like print(np.eye(2)[1]), just makes one_hot
+# tensor [HOT, value]
+# lebron -> np.eye(2)[0] = tensor[1.0,0]
+# tatum -> np.eye(2)[1] = tensor[0,1.0]
+test.append([np.array(img), np.eye(2)[1]])
+
+#self.training_data.append([np.array(img), np.eye(2)[self.LABELS[label]]])
+lebarnVtate = LebarnVSTate()
+print(lebarnVtate.LABELS[lebarnVtate.TATUM])
+X = torch.Tensor(test[0][0]).view(-1, 50, 50)
+# pixel values (we want a num between 0-1)
+X = X/255.0
+y = torch.Tensor(test[0][1])
+#plt.imshow(X[0], cmap="gray")
+fwd_pass2(X, y)
