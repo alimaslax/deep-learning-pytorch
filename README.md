@@ -1,5 +1,18 @@
 # Deep Learning With Pytorch
 
+This repo is combination of work from the likes of Andrej, Course-ai, and Sentdex tutorials
+
+## Course-ai
+https://course.fast.ai/
+
+
+
+## Andrej
+
+https://www.youtube.com/@AndrejKarpathy
+
+### Sentdex
+
 These are my Jupyter Notebooks and notes as I go through my self-taught journey into Deep Learning Nueral Networks. 
 
 Attributed proper credit to Harrison 
