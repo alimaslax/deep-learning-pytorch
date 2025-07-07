@@ -5,7 +5,15 @@
 !/*.ipynb
 # etc...
 
+
+# datasets
+archive
+libs
+archive.zip
+
 # ignore images
+*.jpg
+*.png
 
 src/lebarn
 src/tate
