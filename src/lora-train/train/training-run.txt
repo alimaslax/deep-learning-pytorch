@@ -1,0 +1,4 @@
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "GET /api/models/mlx-community/Meta-Llama-3-8B-Instruct-4bit/revision/main HTTP/1.1" 200 14930
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): huggingface.co:443
+DEBUG:urllib3.connectionpool:https://huggingface.co:443 "GET /api/models/mlx-community/Meta-Llama-3-8B-Instruct-4bit/revision/main HTTP/1.1" 200 14930
